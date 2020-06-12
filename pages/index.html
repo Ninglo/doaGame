@@ -6,6 +6,16 @@
 </head>
 
 <body>
+    <div id="head">
+        <div v-if="userName">
+            Hello, {{ userName }}
+            <a href="/" v-on:click="logOut">Log out</a>
+        </div>
+        <div v-else>
+            <a href="/login">Login</a>
+            <a href="/regist">Regist</a>
+        </div>
+    </div>
     <div id="gameCenter" v-if="show">
         <div>Game Center:</div>
         <ul>
@@ -21,7 +31,7 @@
         This is gameRoom.
         <ul>
             <li v-for="gamer in gamers">
-                {{ gamer }} {{ id === gamer ? '(YOU)' : '' }}
+                {{ userName ? userName : gamer }} {{ id === gamer ? '(YOU)' : '' }}
             </li>
         </ul>
         <div>
@@ -31,7 +41,22 @@
     </div>
     <script src="/socket.io/socket.io.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+    <script src="https://unpkg.com/vue-cookies@1.5.12/vue-cookies.js"></script>
     <script>
+        var head = new Vue({
+            el: '#head',
+            data: {
+                userName: $cookies.get('userName')
+            },
+            methods: {
+                logOut: function ()
+                {
+                    $cookies.set('userName', '')
+                    this.userName = $cookies.get('userName')
+                }
+            }
+        })
+
         var center = new Vue({
             el: '#gameCenter',
             data: {
@@ -70,6 +95,7 @@
                     'throw',
                     'hold'
                 ],
+                userName: $cookies.get('userName'),
                 chooses: [],
                 gamers: [],
                 show: false,

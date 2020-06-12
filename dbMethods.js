@@ -15,7 +15,6 @@ exports.findDocuments = function (db, callback) {
     const collection = db.collection('documents')
     collection.find({}).toArray((err, docs) => {
         assert.equal(err, null)
-        console.log('Found the following records')
         callback(docs)
     })
 }

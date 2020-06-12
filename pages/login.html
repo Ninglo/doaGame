@@ -2,11 +2,13 @@
 <html>
 
 <head>
-    <title>Login</title>
+    <title>
+        Log in
+    </title>
 </head>
 
 <body>
-    <form id="app" @submit="checkForm" action="/login" method="POST">
+    <form id="app" @submit="checkForm" action="/login" method="POST" ref="form">
         <p v-if="error">
             {{ error }}
         </p>
@@ -19,14 +21,9 @@
             <input id="password" v-model="password" name="password" placeholder="Password" type="password">
         </p>
         <p>
-            <label for="passwordAgain">Password again:</label>
-            <input id="password" v-model="passwordAgain" placeholder="passwordAgain" type="password">
-        </p>
-        <p>
             <input type="submit" value="Submit">
         </p>
     </form>
-
     <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
     <script>
         var app = new Vue({
@@ -34,19 +31,39 @@
             data: {
                 userName: null,
                 password: null,
-                passwordAgain: null,
                 error: null
             },
             methods: {
                 checkForm: function (e)
                 {
-                    if (this.password === this.passwordAgain) {
-                        return true
-                    }
-                    else {
-                        this.error = 'Password is not same, please input again.'
-                        e.preventDefault()
-                    }
+                    fetch(`/api/login?userName=${this.userName}&password=${this.password}`)
+                        .then(async res =>
+                        {
+                            switch (res.status) {
+                                case 200:
+                                    var formData = JSON.stringify({
+                                        userName: this.userName,
+                                        password: this.password
+                                    })
+                                    console.log(this)
+                                    this.$refs.form.submit()
+                                    this.$http.post('/login', formData)
+                                    break
+
+                                case 300:
+                                    this.error = 'Wrong password'
+                                    break
+
+                                case 400:
+                                    this.error = 'UserName not exist'
+                                    break
+
+                                default:
+                                    alert('Oops')
+                                    break;
+                            }
+                        })
+                    e.preventDefault()
                 }
             }
         })

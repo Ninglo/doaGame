@@ -1,12 +1,16 @@
 var app = require('express')()
 var server = require('http').Server(app)
 var io = require('socket.io')(server)
-var bodyParser = require('body-parser');
 var MongoClient = require('mongodb').MongoClient
-var assert = require('assert')
 
-var toolBox = require('toolBox.js')
-var dbMethods = require('dbMethods.js')
+// express middleWare
+var cookieParser = require('cookie-parser')
+var bodyParser = require('body-parser')
+
+// tools
+var assert = require('assert')
+var toolBox = require('./toolBox.js')
+var dbMethods = require('./dbMethods.js')
 
 const dbUrl = 'mongodb://localhost:27017'
 const dbName = 'NanoGame'
@@ -20,7 +24,8 @@ dbClient.connect((err) => {
 
     const db = dbClient.db(dbName)
 
-    app.use(bodyParser.urlencoded({ extended: true }));
+    app.use(bodyParser.urlencoded({ extended: true }))
+    app.use(cookieParser())
 
     app.get('/', function (req, res) {
         res.sendfile(__dirname + '/pages/index.html')
@@ -31,11 +36,49 @@ dbClient.connect((err) => {
     })
 
     app.post('/regist', function (req, res) {
-        console.log(req.body)
+        // Bug: 没有检测用户名是否重复
         dbMethods.insertDocuments(db, req.body, () => {
-            dbMethods.findDocuments(db, console.log)
+            dbMethods.findDocuments(db)
         })
+        res.cookie('userName', req.body.userName)
         res.redirect('/')
+    })
+
+    app.get('/login', function (req, res) {
+        res.sendFile(`${__dirname}/pages/login.html`)
+    })
+
+    app.post('/login', function (req, res) {
+        res.cookie('userName', req.body.userName)
+        res.redirect('/')
+    })
+
+    app.get('/api/login', function (req, res) {
+        var userName = req.query.userName
+        var password = req.query.password
+        console.log(req.query)
+        dbMethods.findDocuments(db, (docs) => {
+            for (const user of docs)
+            {
+                if (user.userName === userName)
+                {
+                    if (user.password === password)
+                    {
+                        res.statusCode = 200
+                        res.end('1')
+                        return
+                    }
+                    else
+                    {
+                        res.statusCode = 300
+                        res.end('2')
+                        return
+                    }
+                }
+            }
+            res.statusCode = 400
+            res.end('3')
+        })
     })
 })
 
