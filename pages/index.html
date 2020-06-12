@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Index</title>
+</head>
+
+<body>
+    <div id="gameCenter" v-if="show">
+        <div>Game Center:</div>
+        <ul>
+            <li v-for="room in oneGamerRooms">
+                {{ room.name }}
+                <button v-on:click="joinRoom(room)">Join</button>
+            </li>
+        </ul>
+        <input v-model="roomName">
+        <button v-on:click="createRoom">Create</button>
+    </div>
+    <div id="room" v-if="show">
+        This is gameRoom.
+        <ul>
+            <li v-for="gamer in gamers">
+                {{ gamer }} {{ id === gamer ? '(YOU)' : '' }}
+            </li>
+        </ul>
+        <div>
+            {{ message }}
+        </div>
+        <button v-for="action in actions" v-on:click="attack(action)" v-if="full">{{ action }}</button>
+    </div>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+    <script>
+        var center = new Vue({
+            el: '#gameCenter',
+            data: {
+                rooms: [],
+                roomName: '',
+                show: true
+            },
+            methods: {
+                joinRoom: function (room)
+                {
+                    this.show = false
+                    gameRoom.show = true
+                    socket.emit('joinRoom', room.name)
+                },
+                createRoom: function ()
+                {
+                    socket.emit('createRoom', this.roomName)
+                    this.show = false
+                    gameRoom.show = true
+                    socket.emit('joinRoom', this.roomName)
+                }
+            },
+            computed: {
+                oneGamerRooms: function ()
+                {
+                    return this.rooms.filter(i => i.gamers.length === 1)
+                }
+            }
+        })
+
+        var gameRoom = new Vue({
+            el: '#room',
+            data: {
+                actions: [
+                    'punch',
+                    'throw',
+                    'hold'
+                ],
+                chooses: [],
+                gamers: [],
+                show: false,
+                full: true,
+                roomName: '',
+                message: '',
+                id: ''
+            },
+            methods: {
+                attack: function (actionName)
+                {
+                    this.chooses.push(actionName)
+                    if (this.chooses.length == 3) {
+                        this.full = false
+                        socket.emit('chooses', { chooses: this.chooses, roomName: this.roomName })
+                    }
+                }
+            }
+        })
+
+        var socket = io()
+        socket.on('roomsUpdate', function (rooms)
+        {
+            center.rooms = rooms
+        })
+        socket.on('roomMessage', function (room)
+        {
+            gameRoom.gamers = room.gamers
+            gameRoom.id = socket.id
+            gameRoom.roomName = room.name
+        })
+        socket.on('gameAnswer', function (answer)
+        {
+            gameRoom.message = answer
+        })
+    </script>
+</body>
+
+</html>

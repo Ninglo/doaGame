@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Login</title>
+</head>
+
+<body>
+    <form id="app" @submit="checkForm" action="/login" method="POST">
+        <p v-if="error">
+            {{ error }}
+        </p>
+        <p>
+            <label for="userName">User name:</label>
+            <input id="userName" v-model="userName" name="userName" placeholder="User Name" type="text">
+        </p>
+        <p>
+            <label for="password">Password:</label>
+            <input id="password" v-model="password" name="password" placeholder="Password" type="password">
+        </p>
+        <p>
+            <label for="passwordAgain">Password again:</label>
+            <input id="password" v-model="passwordAgain" placeholder="passwordAgain" type="password">
+        </p>
+        <p>
+            <input type="submit" value="Submit">
+        </p>
+    </form>
+
+    <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+    <script>
+        var app = new Vue({
+            el: '#app',
+            data: {
+                userName: null,
+                password: null,
+                passwordAgain: null,
+                error: null
+            },
+            methods: {
+                checkForm: function (e)
+                {
+                    if (this.password === this.passwordAgain) {
+                        return true
+                    }
+                    else {
+                        this.error = 'Password is not same, please input again.'
+                        e.preventDefault()
+                    }
+                }
+            }
+        })
+    </script>
+
+</body>
+
+</html>
