@@ -2,70 +2,41 @@ var app = require('express')()
 var server = require('http').Server(app)
 var io = require('socket.io')(server)
 var bodyParser = require('body-parser');
+var MongoClient = require('mongodb').MongoClient
+var assert = require('assert')
+
+var toolBox = require('toolBox.js')
+var dbMethods = require('dbMethods.js')
+
+const dbUrl = 'mongodb://localhost:27017'
+const dbName = 'NanoGame'
+const dbClient = new MongoClient(dbUrl)
 
 var rooms = []
 
-function compareGamer(chooses, gamers) {
-    var gamer1 = chooses[gamers[0]]
-    var gamer2 = chooses[gamers[1]]
-    var win1 = 0
-    var win2 = 0
-    for (var i = 0; i < 3; i++)
-    {
-        if (judge(gamer1[i], gamer2[i]))
-        {
-            console.log('w1')
-            win1++
-        }
-        if (judge(gamer2[i], gamer1[i]))
-        {
-            console.log('w2')
-            win2++
-        }
-        console.log(win1, win2)
-    }
-    if (win1 > win2)
-    {
-        return `${gamers[0]} win!`
-    }
-    if (win1 < win2)
-    {
-        return `${gamers[1]} win!`
-    }
-    else
-    {
-        return 'Draw'
-    }
+dbClient.connect((err) => {
+    assert.equal(null, err)
+    console.log('Connected successfully to server.')
 
-    function judge(chose1, chose2) {
-        winCombination = [["hold", "punch"], ["punch", "throw"], ["throw", "hold"]]
-        gameResult = [chose1, chose2]
-        for (var i = 0; i < winCombination.length; i++)
-        {
-            if (JSON.stringify(winCombination[i]) == JSON.stringify(gameResult))
-            {
-                return true
-            }
-        }
-        return false
-    }
-}
+    const db = dbClient.db(dbName)
 
-server.listen(8000)
+    app.use(bodyParser.urlencoded({ extended: true }));
 
-app.use(bodyParser.urlencoded({ extended: true }));
+    app.get('/', function (req, res) {
+        res.sendfile(__dirname + '/pages/index.html')
+    })
 
-app.get('/', function (req, res) {
-    res.sendfile(__dirname + '/pages/index.html')
-})
+    app.get('/regist', function (req, res) {
+        res.sendFile(__dirname + '/pages/regist.html')
+    })
 
-app.get('/login', function (req, res) {
-    res.sendFile(__dirname + '/pages/login.html')
-})
-
-app.post('/login', function (req, res) {
-    console.log(req.body)
-    res.redirect('/')
+    app.post('/regist', function (req, res) {
+        console.log(req.body)
+        dbMethods.insertDocuments(db, req.body, () => {
+            dbMethods.findDocuments(db, console.log)
+        })
+        res.redirect('/')
+    })
 })
 
 io.on('connection', function (socket) {
@@ -105,7 +76,7 @@ io.on('connection', function (socket) {
                 rooms[i].joinIt += 1
                 if (rooms[i].joinIt == 2)
                 {
-                    var answer = compareGamer(rooms[i].chooses, rooms[i].gamers)
+                    var answer = toolBox.compareGamer(rooms[i].chooses, rooms[i].gamers)
                     rooms[i].gamers.forEach(id => {
                         io.to(id).emit('gameAnswer', answer)
                     })
@@ -114,3 +85,5 @@ io.on('connection', function (socket) {
         }
     })
 })
+
+server.listen(8000)
